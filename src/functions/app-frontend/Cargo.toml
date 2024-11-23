@@ -1,0 +1,21 @@
+[package]
+name = "app-frontend"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aws_lambda_events = { workspace = true }
+chrono = { workspace = true }
+lambda-lw-http-router = { workspace = true }
+lambda-otel-lite = { workspace = true }
+lambda_runtime = { workspace = true }
+reqwest = { workspace = true }
+reqwest-middleware = { workspace = true }
+reqwest-tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tera = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

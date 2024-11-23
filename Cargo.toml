@@ -1,0 +1,137 @@
+[workspace]
+members = [
+    "src/layers/otlp-stdout-kinesis-extension",
+    "src/functions/app-backend",
+    "src/functions/app-frontend",
+    "src/functions/client-rust",
+    "src/functions/client-rust-wide",
+    "src/functions/otlp-forwarder-cwl",
+    "src/functions/otlp-forwarder-kinesis",
+]
+
+resolver = "3"
+
+[workspace.package]
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.90.0"
+
+[workspace.dependencies]
+# Serverless OTLP forwarder
+lambda-lw-http-router = "0.4.0"
+lambda-otel-lite = "0.17.0"
+otlp-sigv4-client = "0.12.0"
+otlp-stdout-client = "0.4.1"
+otlp-stdout-logs-processor = { path = "src/functions/otlp-forwarder-cwl" }
+otlp-stdout-span-exporter = "0.16.0"
+serverless-otlp-forwarder-core = "0.1.0"
+
+# AWS related
+aws-config = { version = "1.8.7", features = ["behavior-version-latest"] }
+aws-credential-types = "1.2.7"
+aws-sdk-cloudformation = "1.83.0"
+aws-sdk-cloudwatchlogs = { version = "1.91.0", features = ["behavior-version-latest"] }
+aws-sdk-dynamodb = "1.82.0"
+aws-sdk-kinesis = { version = "1.78.0", default-features = false, features = ["rt-tokio"] }
+aws-sdk-lambda = "1.86.0"
+aws-sdk-secretsmanager = { version = "1.78.0", features = ["behavior-version-latest"] }
+aws-sdk-sts = { version = "1.76.0", features = ["behavior-version-latest"] }
+aws-sigv4 = "1.3.4"
+aws-smithy-runtime-api = { version = "1.9.0", features = ["http-1x"] }
+aws_lambda_events = { version = "0.16.1", default-features = false, features = ["alb", "apigw", "cloudwatch_logs", "kinesis", "sqs"] }
+lambda-extension = "0.11.0"
+lambda_runtime = { version = "0.14.4", features = ["anyhow", "tracing", "opentelemetry"] }
+serde_dynamo = { version = "4.3.0", features = ["aws-sdk-dynamodb+1"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# HTTP and networking
+http = "1.3.1"
+reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls"] }
+reqwest-middleware = "0.4.2"
+tower = "0.5.2"
+url = "2.5.7"
+
+# Macros and code generation
+ctor = "0.2.9"
+darling = "0.20"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }
+
+# OpenTelemetry and tracing
+log = "0.4"
+opentelemetry = { version = "0.30.0", features = ["trace"] }
+opentelemetry-aws = { version = "0.18.0", features = ["detector-aws-lambda"] }
+opentelemetry-http = { version = "0.30.0" }
+opentelemetry-otlp = { version = "0.30.0" }
+opentelemetry-proto = { version = "0.30.0", features = ["gen-tonic", "trace"] }
+opentelemetry-semantic-conventions = { version = "0.30.0" }
+opentelemetry_sdk = { version = "0.30.0", features = ["rt-tokio"] }
+reqwest-tracing = { version = "0.5.8", features = ["opentelemetry_0_30"] }
+tracing = { version = "0.1", features = ["log"] }
+tracing-opentelemetry = "0.31.0"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Runtime and async
+async-trait = "0.1.89"
+futures = "0.3.31"
+futures-executor = "0.3.31"
+futures-util = "0.3.31"
+tokio = { version = "1", features = ["full"] }
+tokio-test = "0.4.4"
+
+# Serialization and data formats
+prost = "0.13.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.145"
+serde_yaml = "0.9"
+
+# Testing tools
+colored = "3.0.0"
+comfy-table = "7.2.1"
+doc-comment = "0.3"
+hex = "0.4"
+mockall = "0.13.1"
+mockito = "1.7"
+nix = "0.30.1"
+prettytable-rs = "0.10"
+rand = "0.9"
+scopeguard = "1.2"
+sealed_test = "1.1"
+serial_test = "3.2.0"
+tabled = "0.19.0"
+tempfile = "3.23"
+terminal_size = "0.4.3"
+wiremock = "0.6"
+
+# Utilities and helpers
+base64 = "0.22.1"
+bon = "3.8"
+bytes = "1.10"
+chrono = "0.4"
+clap = { version = "4.5.48", features = ["derive"] }
+flate2 = "1.1"
+globset = "0.4"
+headless_chrome = "1.0.18"
+indexmap = "2.11.4"
+indicatif = { version = "0.17", features = ["improved_unicode"] }
+lazy_static = "1.5.0"
+libc = "0.2"
+once_cell = "1.21.3"
+pin-project = "1.1"
+regex = "1.11.3"
+sha2 = "0.10.9"
+statrs = "0.18.0"
+tera = "1.20.0"
+toml = "0.8.23"
+urlencoding = "2.1"
+uuid = { version = "1.18", features = ["v4"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
