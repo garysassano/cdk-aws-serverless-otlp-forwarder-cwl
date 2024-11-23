@@ -1,0 +1,31 @@
+[package]
+name = "otlp-stdout-kinesis-processor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+aws-config = { workspace = true }
+aws_lambda_events = { workspace = true, features = ["kinesis"] }
+bytes = { workspace = true }
+lambda-otel-lite = { workspace = true }
+lambda_runtime = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+otlp-stdout-span-exporter = { workspace = true }
+reqwest = { workspace = true }
+reqwest-middleware = { workspace = true }
+reqwest-tracing = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+serverless-otlp-forwarder-core = { workspace = true, features = ["instrumented-client"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+chrono = { workspace = true, features = ["serde"] }
