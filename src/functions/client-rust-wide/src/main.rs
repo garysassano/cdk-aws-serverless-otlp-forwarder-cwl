@@ -170,7 +170,7 @@ impl SpanProcessor for WideEventsSpanProcessor {
 }
 
 // Simple nested function that creates its own span. The attributes are recorded also on the root span.
-#[instrument(fields(nested_tracing_span_attr_in_function,))]
+#[instrument(fields(nested.tracing.key))]
 async fn nested_function() -> Result<String, Error> {
     let span = tracing::Span::current();
 
