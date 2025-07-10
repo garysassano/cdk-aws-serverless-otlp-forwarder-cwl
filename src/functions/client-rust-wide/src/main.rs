@@ -187,10 +187,6 @@ async fn nested_function() -> Result<String, Error> {
 async fn handler(
     _event: LambdaEvent<ApiGatewayV2httpRequest>,
 ) -> Result<ApiGatewayV2httpResponse, Error> {
-    // Use tracing span for easier attribute setting
-    let span = tracing::Span::current();
-    span.record("handler_span_attr", "handler_value");
-
     // Call nested function (it will automatically create a child span due to #[instrument])
     let _result = nested_function().await?;
 
