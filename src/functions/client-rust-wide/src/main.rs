@@ -175,16 +175,10 @@ async fn nested_function() -> Result<String, Error> {
     let span = tracing::Span::current();
 
     // using the tracing api
-    span.record(
-        "nested_tracing_span_attr_in_function",
-        "nested_tracing_value_in_function",
-    );
+    span.record(semconv::trace::FEATURE_FLAG_KEY, "logo-color");
 
     // using the OpenTelemetrySpanExt trait
-    span.set_attribute(
-        "nested_otel_span_attr_in_function",
-        "nested_otel_value_in_function",
-    );
+    span.set_attribute(semconv::trace::FEATURE_FLAG_PROVIDER_NAME, "Flag Manager");
 
     Ok("success".to_string())
 }
@@ -195,10 +189,6 @@ async fn handler(
     // Use tracing span for easier attribute setting
     let span = tracing::Span::current();
     span.record("handler_span_attr", "handler_value");
-
-    // Set custom attributes
-    span.set_attribute(semconv::trace::FEATURE_FLAG_KEY, "logo-color");
-    span.set_attribute(semconv::trace::FEATURE_FLAG_PROVIDER_NAME, "Flag Manager");
 
     // Call nested function (it will automatically create a child span due to #[instrument])
     let _result = nested_function().await?;
