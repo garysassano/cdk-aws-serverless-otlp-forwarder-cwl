@@ -175,10 +175,10 @@ async fn nested_function() -> Result<String, Error> {
     let span = tracing::Span::current();
 
     // using the tracing api
-    span.record(semconv::trace::FEATURE_FLAG_KEY, "logo-color");
+    span.record(semconv::trace::FEATURE_FLAG_KEY, "nested-flag");
 
     // using the OpenTelemetrySpanExt trait
-    span.set_attribute(semconv::trace::FEATURE_FLAG_PROVIDER_NAME, "Flag Manager");
+    span.set_attribute(semconv::trace::FEATURE_FLAG_PROVIDER_NAME, "Nested Flag");
 
     Ok("success".to_string())
 }
