@@ -805,6 +805,7 @@ dependencies = [
  "lambda-otel-lite",
  "lambda_runtime",
  "opentelemetry",
+ "opentelemetry-semantic-conventions 0.30.0",
  "opentelemetry_sdk",
  "otlp-stdout-span-exporter",
  "rand 0.9.1",
