@@ -4,6 +4,7 @@ members = [
     "src/functions/app-backend",
     "src/functions/app-frontend",
     "src/functions/client-rust",
+    "src/functions/client-rust-wide",
     "src/functions/otlp-forwarder-cwl",
     "src/functions/otlp-forwarder-kinesis",
 ]

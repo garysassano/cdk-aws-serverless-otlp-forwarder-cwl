@@ -186,6 +186,23 @@ export class MyStack extends Stack {
       authType: FunctionUrlAuthType.NONE,
     });
 
+    // Client Rust Wide Function
+    const clientRustWide = new RustFunction(this, "ClientRustWide", {
+      functionName: "client-rust-wide",
+      manifestPath: join(__dirname, "../functions/client-rust-wide", "Cargo.toml"),
+      architecture: Architecture.ARM_64,
+      memorySize: 1024,
+      timeout: Duration.minutes(1),
+      loggingFormat: LoggingFormat.JSON,
+      bundling: { cargoLambdaFlags: ["--quiet"] },
+      environment: {
+        LAMBDA_EXTENSION_SPAN_PROCESSOR_MODE: "async",
+      },
+    });
+    const clientRustWideUrl = clientRustWide.addFunctionUrl({
+      authType: FunctionUrlAuthType.NONE,
+    });
+
     //==============================================================================
     // OTLP FORWARDER (LAMBDA)
     //==============================================================================
@@ -271,6 +288,10 @@ export class MyStack extends Stack {
 
     new CfnOutput(this, "ClientRustUrl", {
       value: clientRustUrl.url,
+    });
+
+    new CfnOutput(this, "ClientRustWideUrl", {
+      value: clientRustWideUrl.url,
     });
   }
 }

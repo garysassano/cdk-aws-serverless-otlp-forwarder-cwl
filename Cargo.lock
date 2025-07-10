@@ -798,6 +798,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "client-rust-wide"
+version = "1.0.0"
+dependencies = [
+ "aws_lambda_events",
+ "lambda-otel-lite",
+ "lambda_runtime",
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "otlp-stdout-span-exporter",
+ "rand 0.9.1",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-opentelemetry",
+]
+
+[[package]]
 name = "cmake"
 version = "0.1.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
