@@ -1,34 +1,22 @@
 use aws_lambda_events::event::apigw::{ApiGatewayV2httpRequest, ApiGatewayV2httpResponse};
-use lambda_otel_lite::{LambdaSpanProcessor, OtelTracingLayer, TelemetryConfig, init_telemetry};
-use lambda_runtime::{Error, LambdaEvent, Runtime, tower::ServiceBuilder};
+use lambda_otel_lite::telemetry::{TelemetryConfig, init_telemetry};
+use lambda_otel_lite::{LambdaSpanProcessor, create_traced_handler};
+use lambda_runtime::{Error, LambdaEvent, Runtime, service_fn};
 use opentelemetry::Context;
-use opentelemetry::trace::{SpanId, Status, TraceId};
+use opentelemetry::trace::{SpanId, TraceId};
 use opentelemetry_sdk::{
     Resource,
     error::OTelSdkResult,
     trace::{Span, SpanData, SpanProcessor},
 };
+use opentelemetry_semantic_conventions as semconv;
 use otlp_stdout_span_exporter::OtlpStdoutSpanExporter;
-use rand::Rng;
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{self, Display};
+use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::instrument;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-// Define error type as a simple enum
-#[derive(Debug)]
-enum ErrorType {
-    Expected,
-    Unexpected,
-}
-
-impl Display for ErrorType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
 
 /// A custom span processor that implements the "wide events" pattern.
 ///
@@ -181,126 +169,60 @@ impl SpanProcessor for WideEventsSpanProcessor {
     }
 }
 
-/// Simple nested function that creates its own span.
-#[instrument(skip(event), level = "info", err)]
-async fn nested_function(event: &ApiGatewayV2httpRequest) -> Result<String, ErrorType> {
-    tracing::event!(
-        name: "example.info",
-        tracing::Level::INFO,
-        "event.body" = "Nested function called",
-        "event.severity_text" = "info",
-        "event.severity_number" = 9
+// Simple nested function that creates its own span. The attributes are recorded also on the root span.
+#[instrument(fields(nested_tracing_span_attr_in_function,))]
+async fn nested_function() -> Result<String, Error> {
+    let span = tracing::Span::current();
+
+    // using the tracing api
+    span.record(
+        "nested_tracing_span_attr_in_function",
+        "nested_tracing_value_in_function",
     );
 
-    // Simulate random errors if the path is /error
-    if event.raw_path.as_deref() == Some("/error") {
-        let r: f64 = rand::rng().random();
-        if r < 0.25 {
-            return Err(ErrorType::Expected);
-        } else if r < 0.5 {
-            return Err(ErrorType::Unexpected);
-        }
-    }
+    // using the OpenTelemetrySpanExt trait
+    span.set_attribute(
+        "nested_otel_span_attr_in_function",
+        "nested_otel_value_in_function",
+    );
 
     Ok("success".to_string())
 }
 
-/// Simple Hello World Lambda function using lambda-otel-lite.
-///
-/// This example demonstrates basic OpenTelemetry setup with lambda-otel-lite.
-/// It creates spans for each invocation and logs the event payload using span events.
 async fn handler(
-    event: LambdaEvent<ApiGatewayV2httpRequest>,
+    _event: LambdaEvent<ApiGatewayV2httpRequest>,
 ) -> Result<ApiGatewayV2httpResponse, Error> {
-    // Extract request ID from the event for correlation
-    let request_id = &event.context.request_id;
-    let current_span = tracing::Span::current();
+    // Use tracing span for easier attribute setting
+    let span = tracing::Span::current();
+    span.record("handler_span_attr", "handler_value");
 
-    // Set request ID as span attribute
-    current_span.set_attribute("request.id", request_id.to_string());
+    // Set custom attributes
+    span.set_attribute(semconv::trace::FEATURE_FLAG_KEY, "logo-color");
+    span.set_attribute(semconv::trace::FEATURE_FLAG_PROVIDER_NAME, "Flag Manager");
 
-    // Log the full event payload like in Python version
-    tracing::event!(
-        name: "example.info",
-        tracing::Level::INFO,
-        "event.body" = serde_json::to_string(&event.payload).unwrap_or_default(),
-        "event.severity_text" = "info",
-        "event.severity_number" = 9
-    );
+    // Call nested function (it will automatically create a child span due to #[instrument])
+    let _result = nested_function().await?;
 
-    // Call the nested function and handle potential errors
-    match nested_function(&event.payload).await {
-        Ok(_) => {
-            // Return a successful response
-            Ok(ApiGatewayV2httpResponse {
-                status_code: 200,
-                body: Some(format!("Hello from request {request_id}").into()),
-                ..Default::default()
-            })
-        }
-        Err(ErrorType::Expected) => {
-            // Log the error and return a 400 Bad Request
-            tracing::event!(
-              name:"example.error",
-              tracing::Level::ERROR,
-              "event.body" = "This is an expected error",
-              "event.severity_text" = "error",
-              "event.severity_number" = 10,
-            );
-
-            // Return a 400 Bad Request for expected errors
-            Ok(ApiGatewayV2httpResponse {
-                status_code: 400,
-                body: Some("{{\"message\": \"This is an expected error\"}}".into()),
-                ..Default::default()
-            })
-        }
-        Err(ErrorType::Unexpected) => {
-            // For other errors, propagate them up
-            tracing::event!(
-              name:"example.error",
-              tracing::Level::ERROR,
-              "event.body" = "This is an unexpected error",
-              "event.severity_text" = "error",
-              "event.severity_number" = 10,
-            );
-
-            // Set span status to ERROR like in Python version
-            current_span.set_status(Status::Error {
-                description: Cow::Borrowed("Unexpected error occurred"),
-            });
-
-            // propagate the error
-            Err(Error::from("Unexpected error occurred"))
-        }
-    }
+    Ok(ApiGatewayV2httpResponse {
+        status_code: 200,
+        body: Some("Hello from custom processor!".into()),
+        ..Default::default()
+    })
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    // Create the OTLP stdout exporter
     let exporter = OtlpStdoutSpanExporter::default();
-
-    // Create a LambdaSpanProcessor with the exporter
     let lambda_processor = LambdaSpanProcessor::builder().exporter(exporter).build();
-
-    // Wrap the LambdaSpanProcessor with WideEventsSpanProcessor
     let aggregating_processor = WideEventsSpanProcessor::new(Box::new(lambda_processor));
 
-    // Initialize telemetry with the custom processor chain
-    let (_, completion_handler) = init_telemetry(
-        TelemetryConfig::builder()
-            .with_span_processor(aggregating_processor)
-            .build(),
-    )
-    .await?;
+    let config = TelemetryConfig::builder()
+        .with_span_processor(aggregating_processor)
+        .build();
 
-    // Build service with OpenTelemetry tracing middleware
-    let service = ServiceBuilder::new()
-        .layer(OtelTracingLayer::new(completion_handler).with_name("tower-handler"))
-        .service_fn(handler);
+    let (_, completion_handler) = init_telemetry(config).await?;
 
-    // Create and run the Lambda runtime
-    let runtime = Runtime::new(service);
-    runtime.run().await
+    let handler = create_traced_handler("custom-processor-handler", completion_handler, handler);
+
+    Runtime::new(service_fn(handler)).run().await
 }
